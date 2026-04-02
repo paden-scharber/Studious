@@ -1,0 +1,90 @@
+﻿@page "/study"
+@rendermode InteractiveServer
+
+<h3>StudyMaterial</h3>
+<p>@one</p>
+
+
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>User</th>
+            <th>Study Set</th>
+            <th>Term</th>
+            <th>Definition</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach(var line in usersStudySubjects)
+        {
+            <tr>
+                <td>@line.USERNAME</td>
+                <td>@line.STUDYSET_NAME</td>
+                <td>@line.TERM</td>
+                <td>@line.DEFINITION</td>
+                <td>
+                    <button @onclick="() => DeleteLine(line)">Delete</button>
+                    <button>Update</button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<button>Save</button>
+
+@code {
+    @using Microsoft.Extensions.Configuration;
+    @using Microsoft.Data.SqlClient;
+
+    private List<StudyShit> usersStudySubjects;
+    private string? one;
+
+    protected override async Task OnInitializedAsync()
+    {
+        usersStudySubjects = new List<StudyShit>();
+        await Task.Delay(500);
+
+        var cnxnString = "Server=tcp:studious.database.windows.net,1433;Initial Catalog=StudiousDB;Persist Security Info=False;User ID=StudiousMtsuAdmin;Password=@K8zEBnmSeweZh5;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
+        try
+        {
+            using (SqlConnection cnxn = new SqlConnection(cnxnString))
+            {
+                cnxn.Open();
+                SqlCommand cmd = new SqlCommand("SELECT * FROM FLASH_CARDS", cnxn);
+                using(SqlDataReader reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        StudyShit studyShit = new StudyShit();
+
+                        studyShit.USERNAME = reader[0].ToString();
+                        studyShit.STUDYSET_NAME = reader[1].ToString();
+                        studyShit.TERM = reader[2].ToString();
+                        studyShit.DEFINITION = reader[3].ToString();
+
+                        usersStudySubjects.Add(studyShit);
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            one = ex.Message;
+        }
+    }
+
+
+    private class StudyShit
+    {
+        public string USERNAME { get; set; }
+        public string STUDYSET_NAME { get; set; }
+        public string TERM { get; set; }
+        public string DEFINITION { get; set; }
+    }
+
+    private void DeleteLine(StudyShit shit)
+    {
+        usersStudySubjects.Remove(shit);
+    }
+}

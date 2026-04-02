@@ -1,4 +1,5 @@
 using StudiousWeb.Components;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 

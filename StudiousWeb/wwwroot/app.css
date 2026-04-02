@@ -1,3 +1,15 @@
+:root {
+    --studious-primary-green: #344e41;
+    --studious-secondary-green: #3a5a40;
+    --studious-accent-primary: #588157;
+    --studious-accent-secondary: #a3b18a;
+    --studious-accent-tertiary: #dad7cd;
+}
+
+body {
+    font-family: Arial;
+}
+
 h1:focus {
     outline: none;
 }
@@ -35,4 +47,8 @@ h1:focus {
 
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
+}
+
+.studious-nav-bg-main {
+    background: linear-gradient(#344e41,#3a5a40);
 }
