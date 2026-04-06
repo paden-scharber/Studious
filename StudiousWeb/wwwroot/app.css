@@ -4,10 +4,16 @@
     --studious-accent-primary: #588157;
     --studious-accent-secondary: #a3b18a;
     --studious-accent-tertiary: #dad7cd;
+    --ash-grey: #cad2c5ff;
+    --muted-teal: #84a98cff;
+    --deep-teal: #52796fff;
+    --dark-slate-grey: #354f52ff;
+    --charcoal-blue: #2f3e46ff;
 }
 
 body {
     font-family: Arial;
+    background-color: var(--ash-grey);
 }
 
 h1:focus {
@@ -50,5 +56,9 @@ h1:focus {
 }
 
 .studious-nav-bg-main {
-    background: linear-gradient(#344e41,#3a5a40);
+    background: linear-gradient(var(--dark-slate-grey),var(--charcoal-blue));
 }
+.card > .term-selection {
+    display: none;
+}
+

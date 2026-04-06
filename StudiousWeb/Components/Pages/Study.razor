@@ -1,49 +1,53 @@
 ﻿@page "/study"
 @rendermode InteractiveServer
 
-<h3>StudyMaterial</h3>
-<p>@one</p>
-
-
-<table class="table table-bordered">
-    <thead>
-        <tr>
-            <th>User</th>
-            <th>Study Set</th>
-            <th>Term</th>
-            <th>Definition</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach(var line in usersStudySubjects)
-        {
-            <tr>
-                <td>@line.USERNAME</td>
-                <td>@line.STUDYSET_NAME</td>
-                <td>@line.TERM</td>
-                <td>@line.DEFINITION</td>
-                <td>
-                    <button @onclick="() => DeleteLine(line)">Delete</button>
-                    <button>Update</button>
-                </td>
-            </tr>
-        }
-    </tbody>
-</table>
-
-<button>Save</button>
+@if (studyContents.Any() && !isError)
+{
+    <h3>@studyItem.STUDYSET_NAME</h3>
+    <hr />
+        <div class="d-flex justify-content-between">
+        <button class="btn btn-sm" @onclick="Previous">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-compact-left" viewBox="0 0 16 16">
+                <path fill-rule="evenodd" d="M9.224 1.553a.5.5 0 0 1 .223.67L6.56 8l2.888 5.776a.5.5 0 1 1-.894.448l-3-6a.5.5 0 0 1 0-.448l3-6a.5.5 0 0 1 .67-.223" />
+            </svg>
+        </button>
+            <div class="card" @onclick="FlipCard">
+                <div class="term @(isTerm ? "term-selection" : null)">
+                    <h3 class="card-header">Term</h3>
+                    <p class="card-body">@studyItem.TERM</p>
+                </div>
+                <div class="definition @(!isTerm ? "term-selection" : null)">
+                    <h3 class="card-header">Definition</h3>
+                    <p class="card-body">@studyItem.DEFINITION</p>
+                </div>
+            </div>
+        <button class="btn btn-sm" @onclick="Next">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-compact-right" viewBox="0 0 16 16">
+                <path fill-rule="evenodd" d="M6.776 1.553a.5.5 0 0 1 .671.223l3 6a.5.5 0 0 1 0 .448l-3 6a.5.5 0 1 1-.894-.448L9.44 8 6.553 2.224a.5.5 0 0 1 .223-.671" />
+            </svg>
+        </button>
+        </div>
+        <hr />
+} 
+else
+{
+    <p>Error loading content, please reload the browser or contact the administrator.</p>    
+}
 
 @code {
     @using Microsoft.Extensions.Configuration;
     @using Microsoft.Data.SqlClient;
 
-    private List<StudyShit> usersStudySubjects;
-    private string? one;
+    private List<StudyContent> studyContents;
+    private StudyContent studyItem;
+    private int currentIndex = 0;
+    private int total;
+    private bool isTerm = false;
+    private bool isError = false;
 
     protected override async Task OnInitializedAsync()
     {
-        usersStudySubjects = new List<StudyShit>();
-        await Task.Delay(500);
+        studyContents = new List<StudyContent>();
 
         var cnxnString = "Server=tcp:studious.database.windows.net,1433;Initial Catalog=StudiousDB;Persist Security Info=False;User ID=StudiousMtsuAdmin;Password=@K8zEBnmSeweZh5;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
         try
@@ -56,35 +60,48 @@
                 {
                     while (reader.Read())
                     {
-                        StudyShit studyShit = new StudyShit();
+                        StudyContent content = new StudyContent();
 
-                        studyShit.USERNAME = reader[0].ToString();
-                        studyShit.STUDYSET_NAME = reader[1].ToString();
-                        studyShit.TERM = reader[2].ToString();
-                        studyShit.DEFINITION = reader[3].ToString();
+                        content.USERNAME = reader[0].ToString();
+                        content.STUDYSET_NAME = reader[1].ToString();
+                        content.TERM = reader[2].ToString();
+                        content.DEFINITION = reader[3].ToString();
 
-                        usersStudySubjects.Add(studyShit);
+                        studyContents.Add(content);
                     }
+                    total = studyContents.Count();
+                    studyItem = studyContents[currentIndex];
                 }
             }
         }
         catch (Exception ex)
         {
-            one = ex.Message;
+            isError = true;
         }
     }
 
-
-    private class StudyShit
+    private void FlipCard()
     {
-        public string USERNAME { get; set; }
-        public string STUDYSET_NAME { get; set; }
-        public string TERM { get; set; }
-        public string DEFINITION { get; set; }
+        isTerm = !isTerm;    
     }
 
-    private void DeleteLine(StudyShit shit)
+    private void Next()
     {
-        usersStudySubjects.Remove(shit);
+        if (currentIndex < total - 1)
+        {   
+            if(isTerm == true) isTerm = !isTerm;
+            currentIndex++;
+            studyItem = studyContents[currentIndex];
+        }
+    }
+
+    private void Previous()
+    {
+        if(currentIndex > 0)
+        {
+            if (isTerm == true) isTerm = !isTerm;  
+            currentIndex--;
+            studyItem = studyContents[currentIndex];
+        }
     }
 }
