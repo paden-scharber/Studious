@@ -1,0 +1,6 @@
+@StudiousAPI_HostAddress = http://localhost:5189
+
+GET {{StudiousAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

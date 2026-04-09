@@ -1,3 +1,4 @@
 <Solution>
+  <Project Path="StudiousAPI/StudiousAPI.csproj" Id="5ad8e311-eda2-4158-bf8e-dc4f0e042188" />
   <Project Path="StudiousWeb/StudiousWeb.csproj" />
 </Solution>

@@ -2,7 +2,10 @@
 @rendermode InteractiveServer
 
 <h3>StudyMaterial</h3>
-<p>@one</p>
+
+<div class="flash-card">
+    <p></p>
+</div>
 
 
 <table class="table table-bordered">
@@ -15,19 +18,27 @@
         </tr>
     </thead>
     <tbody>
-        @foreach(var line in usersStudySubjects)
+        @if (!studyMaterial.Any())
         {
-            <tr>
-                <td>@line.USERNAME</td>
-                <td>@line.STUDYSET_NAME</td>
-                <td>@line.TERM</td>
-                <td>@line.DEFINITION</td>
-                <td>
-                    <button @onclick="() => DeleteLine(line)">Delete</button>
-                    <button>Update</button>
-                </td>
-            </tr>
+            <p>Loading....</p>
+        } 
+        else
+        {
+            @foreach (var line in studyMaterial)
+            {
+                <tr>
+                    <td>@line.USERNAME</td>
+                    <td>@line.STUDYSET_NAME</td>
+                    <td>@line.TERM</td>
+                    <td>@line.DEFINITION</td>
+                    <td>
+                        <button class="btn btn-sm btn-danger" @onclick="() => DeleteLine(line)">Delete</button>
+                        <button>Update</button>
+                    </td>
+                </tr>
+            }
         }
+
     </tbody>
 </table>
 
@@ -36,16 +47,15 @@
 @code {
     @using Microsoft.Extensions.Configuration;
     @using Microsoft.Data.SqlClient;
+    @using StudiousWeb.Models;
 
-    private List<StudyShit> usersStudySubjects;
-    private string? one;
+    private List<StudyMaterial> studyMaterial;
 
     protected override async Task OnInitializedAsync()
     {
-        usersStudySubjects = new List<StudyShit>();
-        await Task.Delay(500);
-
+        studyMaterial = new List<StudyMaterial>();
         var cnxnString = "Server=tcp:studious.database.windows.net,1433;Initial Catalog=StudiousDB;Persist Security Info=False;User ID=StudiousMtsuAdmin;Password=@K8zEBnmSeweZh5;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
+
         try
         {
             using (SqlConnection cnxn = new SqlConnection(cnxnString))
@@ -56,35 +66,29 @@
                 {
                     while (reader.Read())
                     {
-                        StudyShit studyShit = new StudyShit();
+                        StudyMaterial studyShit = new StudyMaterial();
 
                         studyShit.USERNAME = reader[0].ToString();
                         studyShit.STUDYSET_NAME = reader[1].ToString();
                         studyShit.TERM = reader[2].ToString();
                         studyShit.DEFINITION = reader[3].ToString();
 
-                        usersStudySubjects.Add(studyShit);
+                        studyMaterial.Add(studyShit);
                     }
                 }
             }
         }
         catch (Exception ex)
         {
-            one = ex.Message;
         }
     }
 
-
-    private class StudyShit
+    /// <summary>
+    /// Deletes a study item from the set per user input.
+    /// </summary>
+    /// <param name="shit"></param>
+    private void DeleteLine(StudyMaterial shit)
     {
-        public string USERNAME { get; set; }
-        public string STUDYSET_NAME { get; set; }
-        public string TERM { get; set; }
-        public string DEFINITION { get; set; }
-    }
-
-    private void DeleteLine(StudyShit shit)
-    {
-        usersStudySubjects.Remove(shit);
+        studyMaterial.Remove(shit);
     }
 }
