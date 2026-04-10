@@ -1,0 +1,264 @@
+﻿@page "/managedb"
+@rendermode InteractiveServer
+
+<h3>Study Material</h3>
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger">@errorMessage</div>
+}
+
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Study Set</th>
+            <th>Term</th>
+            <th>Definition</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var card in usersStudySubjects)
+        {
+            <tr>
+                <td>@card.STUDYSET_NAME</td>
+                <td>
+                    @if (card.EDIT_MODE)
+                    {
+                        <input class="form-control" @bind="card.TERM" placeholder="Term" />
+                    }
+                    else
+                    {
+                        @card.TERM
+                    }
+                </td>
+                <td>
+                    @if (card.EDIT_MODE)
+                    {
+                        <input class="form-control" @bind="card.DEFINITION" placeholder="Definition" />
+                    }
+                    else
+                    {
+                        @card.DEFINITION
+                    }
+                </td>
+                <td>
+                    @if (card.EDIT_MODE)
+                    {
+                        <button class="btn btn-success btn-sm" @onclick="() => ConfirmEdit(card)">
+                            <i class="bi bi-check-lg"></i>
+                        </button>
+                        <button class="btn btn-secondary btn-sm ms-1" @onclick="() => CancelEdit(card)">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    }
+                    else
+                    {
+                        <button class="btn btn-primary btn-sm" @onclick="() => EditCard(card)">
+                            <i class="bi bi-pencil-square"></i>
+                        </button>
+                        <button class="btn btn-danger btn-sm ms-1" @onclick="() => DeleteCard(card)">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<button class="btn btn-info" @onclick="CreateCard">
+    <i class="bi bi-plus-circle"></i> New Card
+</button>
+<button class="btn btn-success ms-2" @onclick="SaveToDB">
+    <i class="bi bi-floppy"></i> Save
+</button>
+
+@if (saveSuccess)
+{
+    <p class="text-success mt-2">✓ Changes saved successfully!</p>
+}
+
+@code {
+@using Microsoft.Data.SqlClient;
+
+    // --- hardcoded for now, swap out with session username later ---
+    private string currentUser = "MYINTC";
+
+private List<StudyShit> usersStudySubjects = new();
+private List<StudyShit> deletedCards = new();
+private string? errorMessage;
+private bool saveSuccess = false;
+
+
+private string cnxnString = "Server=tcp:studious.database.windows.net,1433;Initial Catalog=StudiousDB;Persist Security Info=False;User ID=StudiousMtsuAdmin;Password=@K8zEBnmSeweZh5;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
+
+
+// READ - load cards for current user on page load
+protected override async Task OnInitializedAsync()
+{
+    await LoadCards();
+}
+
+private async Task LoadCards()
+{
+    usersStudySubjects.Clear();
+    errorMessage = null;
+
+    try
+    {
+        using SqlConnection cnxn = new SqlConnection(cnxnString);
+        cnxn.Open();
+        SqlCommand cmd = new SqlCommand(
+            "SELECT ID, USERNAME, STUDYSET_NAME, TERM, DEFINITION FROM FLASH_CARDS WHERE USERNAME = @u", cnxn);
+        cmd.Parameters.AddWithValue("@u", currentUser);
+
+        using SqlDataReader reader = cmd.ExecuteReader();
+        while (reader.Read())
+        {
+            usersStudySubjects.Add(new StudyShit
+            {
+                ID = (int)reader["ID"],
+                USERNAME = reader["USERNAME"].ToString(),
+                STUDYSET_NAME = reader["STUDYSET_NAME"].ToString(),
+                TERM = reader["TERM"].ToString(),
+                DEFINITION = reader["DEFINITION"].ToString()
+            });
+        }
+    }
+    catch (Exception ex)
+    {
+        errorMessage = ex.Message;
+    }
+}
+
+// CREATE - add a new empty editable row to the table
+private void CreateCard()
+{
+    saveSuccess = false;
+    var defaultSet = usersStudySubjects.Count > 0 ? usersStudySubjects[0].STUDYSET_NAME : "";
+
+    usersStudySubjects.Add(new StudyShit
+    {
+        USERNAME = currentUser,
+        STUDYSET_NAME = defaultSet,
+        TERM = "",
+        DEFINITION = "",
+        IS_NEW = true,
+        EDIT_MODE = true
+    });
+}
+
+// UPDATE - put a row into edit mode
+private void EditCard(StudyShit card)
+{
+    saveSuccess = false;
+    card.ORIGINAL_TERM = card.TERM;
+    card.ORIGINAL_DEFINITION = card.DEFINITION;
+    card.EDIT_MODE = true;
+}
+
+private void ConfirmEdit(StudyShit card)
+{
+    if (!card.IS_NEW)
+        card.IS_DIRTY = true;
+
+    card.EDIT_MODE = false;
+}
+
+private void CancelEdit(StudyShit card)
+{
+    if (card.IS_NEW)
+    {
+        usersStudySubjects.Remove(card);
+    }
+    else
+    {
+        // restore original values
+        card.TERM = card.ORIGINAL_TERM;
+        card.DEFINITION = card.ORIGINAL_DEFINITION;
+        card.EDIT_MODE = false;
+    }
+}
+
+// DELETE - remove from UI, track for DB deletion on Save
+private void DeleteCard(StudyShit card)
+{
+    saveSuccess = false;
+    if (!card.IS_NEW)
+        deletedCards.Add(card);
+
+    usersStudySubjects.Remove(card);
+}
+
+// SAVE - sync everything to the database
+private async Task SaveToDB()
+{
+    errorMessage = null;
+
+    try
+    {
+        using SqlConnection cnxn = new SqlConnection(cnxnString);
+        cnxn.Open();
+
+        // INSERT new cards
+        foreach (var card in usersStudySubjects.Where(c => c.IS_NEW))
+        {
+            SqlCommand cmd = new SqlCommand(
+                "INSERT INTO FLASH_CARDS (USERNAME, STUDYSET_NAME, TERM, DEFINITION) VALUES (@u, @s, @t, @d)", cnxn);
+            cmd.Parameters.AddWithValue("@u", card.USERNAME);
+            cmd.Parameters.AddWithValue("@s", card.STUDYSET_NAME);
+            cmd.Parameters.AddWithValue("@t", card.TERM);
+            cmd.Parameters.AddWithValue("@d", card.DEFINITION);
+            await cmd.ExecuteNonQueryAsync();
+            card.IS_NEW = false;
+        }
+
+        // UPDATE dirty cards
+        foreach (var card in usersStudySubjects.Where(c => c.IS_DIRTY))
+        {
+            SqlCommand cmd = new SqlCommand(
+                "UPDATE FLASH_CARDS SET TERM = @t, DEFINITION = @d WHERE ID = @id", cnxn);
+            cmd.Parameters.AddWithValue("@t", card.TERM);
+            cmd.Parameters.AddWithValue("@d", card.DEFINITION);
+            cmd.Parameters.AddWithValue("@id", card.ID);
+            await cmd.ExecuteNonQueryAsync();
+            card.IS_DIRTY = false;
+        }
+
+        // DELETE removed cards
+        foreach (var card in deletedCards)
+        {
+            SqlCommand cmd = new SqlCommand(
+                "DELETE FROM FLASH_CARDS WHERE ID = @id", cnxn);
+            cmd.Parameters.AddWithValue("@id", card.ID);
+            await cmd.ExecuteNonQueryAsync();
+        }
+
+        deletedCards.Clear();
+
+        // reload to reflect any DB-generated values like new IDs
+        await LoadCards();
+    }
+    catch (Exception ex)
+    {
+        errorMessage = ex.Message;
+    }
+    saveSuccess = true;
+}
+
+// Model
+private class StudyShit
+{
+    public int ID { get; set; }
+    public string USERNAME { get; set; } = "";
+    public string STUDYSET_NAME { get; set; } = "";
+    public string TERM { get; set; } = "";
+    public string DEFINITION { get; set; } = "";
+    public bool EDIT_MODE { get; set; } = false;
+    public bool IS_NEW { get; set; } = false;
+    public bool IS_DIRTY { get; set; } = false;
+    public string ORIGINAL_TERM { get; set; } = "";
+    public string ORIGINAL_DEFINITION { get; set; } = "";
+}
+}
