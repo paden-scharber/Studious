@@ -1,6 +1,10 @@
 using StudiousWeb.Components;
 using Microsoft.EntityFrameworkCore;
 using StudiousWeb.Models;
+using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Components.Web;
+using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+using StudiousWeb.Components.Services;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -8,6 +12,12 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+
+builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.Configuration["WebApiAddress"]!) });
+builder.Services.AddCascadingAuthenticationState();
+builder.Services.AddAuthorizationCore();
+builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthStateProvider>();
 
 var app = builder.Build();
 
