@@ -36,6 +36,9 @@
         <div class="col-auto">
             <button class="btn btn-sm btn-success" @onclick="LoginAsync">Login</button>
         </div>
+        <div class="col-auto">
+            <button class="btn btn-sm btn-success" @onclick="RegisterAsync">Register</button>
+        </div>
     </div>
     <div class="row d-flex justify-content-center">
         <div class="col-auto">
@@ -48,6 +51,7 @@
 @inject AuthenticationStateProvider provider
 @inject NavigationManager navigationManager // Used for redirection
 @inject ProtectedLocalStorage protectedLocalStore // Used for local storage inm client browser
+@inject ILocalStorageService localStorageService
 @code {
     private string email = "";
     private string password = "";
@@ -64,9 +68,23 @@
 
         if(formResult.Succeeded)
         {
-            await protectedLocalStore.SetAsync("token", "HELLO WORLD!");
-           // navigationManager.NavigateTo("/");
             
+            navigationManager.NavigateTo("/");
+        }
+        else
+        {
+            error = formResult.Errors[0];
+        }
+    }
+
+    private async Task RegisterAsync()
+    {
+        var authStateProvider = (CustomAuthStateProvider)provider;
+        var formResult = await authStateProvider.RegisterAsync(email, password);
+
+        if (formResult.Succeeded)
+        {
+           await LoginAsync();
         }
         else
         {

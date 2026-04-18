@@ -1,31 +1,6 @@
 ﻿@inherits LayoutComponentBase
 
-<div class="navbar studious-nav-bg-main">
-    <div class="container">
-        <a class="navbar-brand text-white" href="">
-            <img src="Assets\Images\Studious_Logo.svg" width="43" height="32">
-            Studious
-        </a>
-        <div class="navbar-nav flex-row gap-4">
-            <NavLink class="nav-link text-white" href="">Home</NavLink>
-            <NavLink class="nav-link text-white" href="Study">Study Time</NavLink>
-            <NavLink class="nav-link text-white" href="ManageDB">Edit Sets</NavLink>
-            <NavLink class="nav-link text-white" href="">About</NavLink>
-        </div>
-        <AuthorizeView>
-            <Authorized>
-                <p>Hello, @context.User.Identity?.Name!</p>
-                <button class="btn btn-primary">Logout</button>
-            </Authorized>
-            <NotAuthorized>
-                <a href="login">Login</a>
-                <a href="">Register</a>
-            </NotAuthorized>
-        </AuthorizeView>
-    </div>
-</div>
 <div class="container">@Body</div>
-
 
 <div id="blazor-error-ui" data-nosnippet>
     An unhandled error has occurred.

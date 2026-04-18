@@ -1,8 +1,9 @@
 ﻿using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.JSInterop;
 using StudiousWeb.Models;
+using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text.Json.Nodes;
-using System.Net.Http.Headers;
 
 namespace StudiousWeb.Components.Services
 {
@@ -12,10 +13,12 @@ namespace StudiousWeb.Components.Services
     public class CustomAuthStateProvider : AuthenticationStateProvider
     {
         private readonly HttpClient httpClient;
+        private readonly ILocalStorageService localStorageService;
 
-        public CustomAuthStateProvider(HttpClient httpClient)
+        public CustomAuthStateProvider(HttpClient httpClient, ILocalStorageService localStorageService)
         {
             this.httpClient = httpClient;
+            this.localStorageService = localStorageService;
         }
 
         public override async Task<AuthenticationState> GetAuthenticationStateAsync()
@@ -77,6 +80,9 @@ namespace StudiousWeb.Components.Services
                     var accessToken = responseAsJson?["accessToken"]?.ToString();
                     var refreshToken = responseAsJson?["refreshToken"]?.ToString();
 
+                    await localStorageService.SetItemAsync("accessToken", accessToken);
+                    await localStorageService.SetItemAsync("refreshToken", refreshToken);
+
                     httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
                     NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
@@ -86,13 +92,46 @@ namespace StudiousWeb.Components.Services
                 else
                 {
                     result.Succeeded = false;
-                    result.Errors = ["Unable to authenticate with the provide credentials."];
+                    result.Errors = ["Unable to authenticate with the provided credentials."];
                 }
             }
             catch
             {
                 result.Succeeded = false;
                 result.Errors = ["Connection issue with the provider.\nPlease try again, or contact your administrator."];
+            }
+
+            return result;
+        }
+
+
+        public async Task<FormResult> RegisterAsync(string email, string password)
+        {
+
+            FormResult result = new FormResult();
+
+            try
+            {
+                var response = await httpClient.PostAsJsonAsync("register", new { email, password });
+
+                if(response.IsSuccessStatusCode)
+                {
+                    result.Succeeded = true;
+                }
+                else
+                {
+                    var responseAsString = await response.Content.ReadAsStringAsync();
+                    var responseAsJson = JsonNode.Parse(responseAsString);
+                    var error = responseAsJson?["errors"]?.ToString();
+                    
+                    result.Succeeded = false;
+                    result.Errors = [error];
+                }
+            }
+            catch (Exception ex)
+            {
+                result.Succeeded = false;
+                result.Errors = ["Error connection to web api."];
             }
 
             return result;
