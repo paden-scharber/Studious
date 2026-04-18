@@ -1,25 +1,35 @@
 ﻿@page "/study"
+@page "/study/{StudySetName}"
 @rendermode InteractiveServer
+@inject NavigationManager Nav
 
 
 @if (studyContents.Any() && !isError)
 {
-    <h3>@studyItem.STUDYSET_NAME</h3>
+    <div><br /></div>
+    <div class="d-flex align-items-center mb-3">
+        <button class="btn btn-secondary btn-sm me-3" @onclick="GoBack">
+            <i class="bi bi-arrow-left"></i> Back
+        </button>
+        <h3 class="mb-0">@studyItem.STUDYSET_NAME</h3>
+    </div>
     <hr />
         <div class="d-flex justify-content-between">
         <button class="btn btn-sm" @onclick="Previous">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-compact-left" viewBox="0 0 16 16">
                 <path fill-rule="evenodd" d="M9.224 1.553a.5.5 0 0 1 .223.67L6.56 8l2.888 5.776a.5.5 0 1 1-.894.448l-3-6a.5.5 0 0 1 0-.448l3-6a.5.5 0 0 1 .67-.223" />
             </svg>
-        </button>
-            <div class="card" @onclick="FlipCard">
+        </button>        
+            <div class="card" style="width: 500px; height: 300px;" @onclick="FlipCard">           
                 <div class="term @(isTerm ? "term-selection" : null)">
-                    <h3 class="card-header">Term</h3>
-                    <p class="card-body">@studyItem.TERM</p>
+                    <p class="card-header">Term</p>
+                    <p class="card-body fs-3 text-center d-flex align-items-center justify-content-center" style="height: 250px;">
+                    @studyItem.TERM</p>
                 </div>
                 <div class="definition @(!isTerm ? "term-selection" : null)">
-                    <h3 class="card-header">Definition</h3>
-                    <p class="card-body">@studyItem.DEFINITION</p>
+                    <p class="card-header">Definition</p>
+                    <p class="card-body fs-3 text-center d-flex align-items-center justify-content-center" style="height: 250px;">
+                    @studyItem.DEFINITION</p>
                 </div>
             </div>
         <button class="btn btn-sm" @onclick="Next">
@@ -40,12 +50,17 @@ else
     @using Microsoft.Data.SqlClient;
     @using StudiousWeb.Models;
 
+    [Parameter] public string? StudySetName { get; set; }
+
+    private string currentUser = "MYINTC";
     private List<StudyContent> studyContents;
     private StudyContent studyItem;
     private int currentIndex = 0;
     private int total;
     private bool isTerm = false;
     private bool isError = false;
+
+    private string cnxnString = "Server=tcp:studious.database.windows.net,1433;Initial Catalog=StudiousDB;Persist Security Info=False;User ID=StudiousMtsuAdmin;Password=@K8zEBnmSeweZh5;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
 
     protected override async Task OnInitializedAsync()
     {
@@ -58,17 +73,20 @@ else
             using (SqlConnection cnxn = new SqlConnection(cnxnString))
             {
                 cnxn.Open();
-                SqlCommand cmd = new SqlCommand("SELECT * FROM FLASH_CARDS", cnxn);
+                SqlCommand cmd = new SqlCommand(
+                       "SELECT ID, USERNAME, STUDYSET_NAME, TERM, DEFINITION FROM FLASH_CARDS WHERE USERNAME = @u AND STUDYSET_NAME = @s", cnxn);
+                cmd.Parameters.AddWithValue("@u", currentUser);
+                cmd.Parameters.AddWithValue("@s", StudySetName);
                 using(SqlDataReader reader = cmd.ExecuteReader())
                 {
                     while (reader.Read())
-                    {
+                    { 
                         StudyContent content = new StudyContent();
-
-                        content.USERNAME = reader[0].ToString();
-                        content.STUDYSET_NAME = reader[1].ToString();
-                        content.TERM = reader[2].ToString();
-                        content.DEFINITION = reader[3].ToString();
+                        content.ID = (int)reader["ID"];
+                        content.USERNAME = reader["USERNAME"].ToString();
+                        content.STUDYSET_NAME = reader["STUDYSET_NAME"].ToString();
+                        content.TERM = reader["TERM"].ToString();
+                        content.DEFINITION = reader["DEFINITION"].ToString();
 
                         studyContents.Add(content);
                     }
@@ -106,5 +124,9 @@ else
             currentIndex--;
             studyItem = studyContents[currentIndex];
         }
+    }
+    private void GoBack()
+    {
+        Nav.NavigateTo($"/sets");
     }
 }
