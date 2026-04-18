@@ -1,11 +1,12 @@
 ﻿@page "/managedb"
 @page "/managedb/{StudySetName}"
 @rendermode InteractiveServer
+@inject NavigationManager Nav
 
 @if (string.IsNullOrEmpty(StudySetName))
 {
     <!-- Set Selection View -->
-    <div> <br /> </div>
+    <div><br /> </div>
     <div class="d-flex justify-content-between align-items-center">
         <h3 class="mb-0">@currentUser's Study Sets</h3>
         <button type="button" class="btn btn-success btn-sm" @onclick="() => showModal = true">
@@ -54,6 +55,7 @@
 else
 {
     <!-- CRUD View -->
+    <div><br /></div>
     <div class="d-flex align-items-center mb-3">
         <button class="btn btn-secondary btn-sm me-3" @onclick="GoBack">
             <i class="bi bi-arrow-left"></i> Back
@@ -123,17 +125,40 @@ else
             }
         </tbody>
     </table>
-
-    <button class="btn btn-info" @onclick="CreateCard">
-        <i class="bi bi-plus-circle"></i> New Card
-    </button>
-    <button class="btn btn-success ms-2" @onclick="SaveToDB">
-        <i class="bi bi-floppy"></i> Save
-    </button>
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <button class="btn btn-info" @onclick="CreateCard">
+                <i class="bi bi-plus-circle"></i> New Card
+            </button>
+            <button class="btn btn-success ms-2" @onclick="SaveToDB">
+                <i class="bi bi-floppy"></i> Save
+            </button>
+        </div>
+        <button class="btn btn-danger" @onclick="() => deleteSetFlag = true">
+            <i class="bi bi-trash"></i> Delete Set
+        </button>
+    </div>
 
     @if (saveSuccess)
     {
         <p class="text-success mt-2">✓ Changes saved successfully!</p>
+    }
+
+    @if (deleteSetFlag)
+    {
+        <div style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000;">
+            <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:white; padding:2rem; border-radius:8px; min-width:300px;">
+                <h5>This action will delete the entire set and cannot be undone. Are you sure? </h5>
+                <div class="mt-3">
+                    <button class="btn btn-success" @onclick="DeleteSet">
+                        <i class="bi bi-check-lg"></i> Confirm
+                    </button>
+                    <button class="btn btn-secondary ms-2" @onclick="() => deleteSetFlag = false">
+                        <i class="bi bi-x-lg"></i> Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
     }
 }
 
@@ -152,6 +177,7 @@ else
     private bool saveSuccess = false;
     private string? newStudySetName;
     private bool showModal = false;
+    private bool deleteSetFlag = false;
 
     private string cnxnString = "Server=tcp:studious.database.windows.net,1433;Initial Catalog=StudiousDB;Persist Security Info=False;User ID=StudiousMtsuAdmin;Password=@K8zEBnmSeweZh5;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
 
@@ -243,10 +269,7 @@ else
 
     private void GoBack()
     {
-        saveSuccess = false;
-        StudySetName = null;
-        usersStudySubjects.Clear();
-        deletedCards.Clear();
+        Nav.NavigateTo($"/sets");
     }
 
     // ---------------------------------------------------------------
@@ -325,56 +348,88 @@ else
     /// </summary>
     /// <returns></returns>
     private async Task SaveToDB()
-{
-    errorMessage = null;
-
-    try
     {
-        using SqlConnection cnxn = new SqlConnection(cnxnString);
-        cnxn.Open();
+        errorMessage = null;
 
-        foreach (var card in usersStudySubjects.Where(c => c.IS_NEW))
+        try
         {
-            SqlCommand cmd = new SqlCommand(
-                "INSERT INTO FLASH_CARDS (USERNAME, STUDYSET_NAME, TERM, DEFINITION) VALUES (@u, @s, @t, @d)", cnxn);
-            cmd.Parameters.AddWithValue("@u", card.USERNAME);
-            cmd.Parameters.AddWithValue("@s", card.STUDYSET_NAME);
-            cmd.Parameters.AddWithValue("@t", card.TERM);
-            cmd.Parameters.AddWithValue("@d", card.DEFINITION);
-            await cmd.ExecuteNonQueryAsync();
-            card.IS_NEW = false;
-        }
+            using SqlConnection cnxn = new SqlConnection(cnxnString);
+            cnxn.Open();
 
-        foreach (var card in usersStudySubjects.Where(c => c.IS_DIRTY))
+            foreach (var card in usersStudySubjects.Where(c => c.IS_NEW))
+            {
+                SqlCommand cmd = new SqlCommand(
+                    "INSERT INTO FLASH_CARDS (USERNAME, STUDYSET_NAME, TERM, DEFINITION) VALUES (@u, @s, @t, @d)", cnxn);
+                cmd.Parameters.AddWithValue("@u", card.USERNAME);
+                cmd.Parameters.AddWithValue("@s", card.STUDYSET_NAME);
+                cmd.Parameters.AddWithValue("@t", card.TERM);
+                cmd.Parameters.AddWithValue("@d", card.DEFINITION);
+                await cmd.ExecuteNonQueryAsync();
+                card.IS_NEW = false;
+            }
+
+            foreach (var card in usersStudySubjects.Where(c => c.IS_DIRTY))
+            {
+                SqlCommand cmd = new SqlCommand(
+                    "UPDATE FLASH_CARDS SET TERM = @t, DEFINITION = @d WHERE ID = @id", cnxn);
+                cmd.Parameters.AddWithValue("@t", card.TERM);
+                cmd.Parameters.AddWithValue("@d", card.DEFINITION);
+                cmd.Parameters.AddWithValue("@id", card.ID);
+                await cmd.ExecuteNonQueryAsync();
+                card.IS_DIRTY = false;
+            }
+
+            foreach (var card in deletedCards)
+            {
+                SqlCommand cmd = new SqlCommand(
+                    "DELETE FROM FLASH_CARDS WHERE ID = @id", cnxn);
+                cmd.Parameters.AddWithValue("@id", card.ID);
+                await cmd.ExecuteNonQueryAsync();
+            }
+
+            deletedCards.Clear();
+            await LoadCards();
+            saveSuccess = true;
+        }
+        catch (Exception ex)
         {
-            SqlCommand cmd = new SqlCommand(
-                "UPDATE FLASH_CARDS SET TERM = @t, DEFINITION = @d WHERE ID = @id", cnxn);
-            cmd.Parameters.AddWithValue("@t", card.TERM);
-            cmd.Parameters.AddWithValue("@d", card.DEFINITION);
-            cmd.Parameters.AddWithValue("@id", card.ID);
-            await cmd.ExecuteNonQueryAsync();
-            card.IS_DIRTY = false;
+            errorMessage = ex.Message;
         }
-
-        foreach (var card in deletedCards)
-        {
-            SqlCommand cmd = new SqlCommand(
-                "DELETE FROM FLASH_CARDS WHERE ID = @id", cnxn);
-            cmd.Parameters.AddWithValue("@id", card.ID);
-            await cmd.ExecuteNonQueryAsync();
-        }
-
-        deletedCards.Clear();
-        await LoadCards();
-        saveSuccess = true;
     }
-    catch (Exception ex)
-    {
-        errorMessage = ex.Message;
-    }
-}
 
-// ---------------------------------------------------------------
+
+    /// <summary>
+    /// DELETE ENTIRE SET
+    /// </summary>
+    /// <param name="setName"></param>
+    /// <returns></returns>
+    private async Task DeleteSet()
+    {     
+        errorMessage = null;
+
+        try
+        {
+            using SqlConnection cnxn = new SqlConnection(cnxnString);
+            cnxn.Open();
+                        
+            SqlCommand cmd = new SqlCommand(
+                "DELETE FROM FLASH_CARDS WHERE USERNAME = @u AND STUDYSET_NAME = @s", cnxn);
+            cmd.Parameters.AddWithValue("@s", StudySetName);
+            cmd.Parameters.AddWithValue("@u", currentUser);
+            await cmd.ExecuteNonQueryAsync();
+            
+
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        deleteSetFlag = false;
+        Nav.NavigateTo($"/sets");
+        
+    }
+
+    // ---------------------------------------------------------------
 // ICON HELPER
 // ---------------------------------------------------------------
 private string GetIconForSet(string setName)
@@ -387,20 +442,5 @@ private string GetIconForSet(string setName)
     return "bi-journal-bookmark";
 }
 
-// ---------------------------------------------------------------
-// MODEL
-// ---------------------------------------------------------------
-private class StudyMaterialToEdit
-{
-    public int ID { get; set; }
-    public string USERNAME { get; set; } = "";
-    public string STUDYSET_NAME { get; set; } = "";
-    public string TERM { get; set; } = "";
-    public string DEFINITION { get; set; } = "";
-    public bool EDIT_MODE { get; set; } = false;
-    public bool IS_NEW { get; set; } = false;
-    public bool IS_DIRTY { get; set; } = false;
-    public string ORIGINAL_TERM { get; set; } = "";
-    public string ORIGINAL_DEFINITION { get; set; } = "";
-}
+
 }
