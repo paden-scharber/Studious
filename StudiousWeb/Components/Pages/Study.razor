@@ -1,4 +1,5 @@
 ﻿@page "/study"
+@page "/study/{StudySetName}"
 @rendermode InteractiveServer
 
 
@@ -14,7 +15,7 @@
         </button>
             <div class="card" @onclick="FlipCard">
                 <div class="term @(isTerm ? "term-selection" : null)">
-                    <h3 class="card-header">Term</h3>
+                    <p class="card-header">Term</p>
                     <p class="card-body">@studyItem.TERM</p>
                 </div>
                 <div class="definition @(!isTerm ? "term-selection" : null)">
@@ -40,12 +41,17 @@ else
     @using Microsoft.Data.SqlClient;
     @using StudiousWeb.Models;
 
+    [Parameter] public string? StudySetName { get; set; }
+
+    private string currentUser = "MYINTC";
     private List<StudyContent> studyContents;
     private StudyContent studyItem;
     private int currentIndex = 0;
     private int total;
     private bool isTerm = false;
     private bool isError = false;
+
+    private string cnxnString = "Server=tcp:studious.database.windows.net,1433;Initial Catalog=StudiousDB;Persist Security Info=False;User ID=StudiousMtsuAdmin;Password=@K8zEBnmSeweZh5;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
 
     protected override async Task OnInitializedAsync()
     {
@@ -58,17 +64,20 @@ else
             using (SqlConnection cnxn = new SqlConnection(cnxnString))
             {
                 cnxn.Open();
-                SqlCommand cmd = new SqlCommand("SELECT * FROM FLASH_CARDS", cnxn);
+                SqlCommand cmd = new SqlCommand(
+                       "SELECT ID, USERNAME, STUDYSET_NAME, TERM, DEFINITION FROM FLASH_CARDS WHERE USERNAME = @u AND STUDYSET_NAME = @s", cnxn);
+                cmd.Parameters.AddWithValue("@u", currentUser);
+                cmd.Parameters.AddWithValue("@s", StudySetName);
                 using(SqlDataReader reader = cmd.ExecuteReader())
                 {
                     while (reader.Read())
-                    {
+                    { 
                         StudyContent content = new StudyContent();
-
-                        content.USERNAME = reader[0].ToString();
-                        content.STUDYSET_NAME = reader[1].ToString();
-                        content.TERM = reader[2].ToString();
-                        content.DEFINITION = reader[3].ToString();
+                        content.ID = (int)reader["ID"];
+                        content.USERNAME = reader["USERNAME"].ToString();
+                        content.STUDYSET_NAME = reader["STUDYSET_NAME"].ToString();
+                        content.TERM = reader["TERM"].ToString();
+                        content.DEFINITION = reader["DEFINITION"].ToString();
 
                         studyContents.Add(content);
                     }
