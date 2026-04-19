@@ -147,5 +147,17 @@ namespace StudiousWeb.Components.Services
 
             return result;
         }
+
+
+        public async Task Logout()
+        {
+            localStorageService.RemoveItemAsync("accessToken");
+            localStorageService.RemoveItemAsync("refreshToken");
+            localStorageService.RemoveItemAsync("username");
+            
+            httpClient.DefaultRequestHeaders.Authorization = null;
+
+            NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
+        }
     }
 }

@@ -33,14 +33,26 @@
                 <AuthorizeView>
                     <Authorized>
                         <li class="dropdown-item"><NavLink class="nav-link" href="">Manage Account</NavLink></li>
-                        <li class="dropdown-item"><NavLink class="nav-item" href="">Sign out</NavLink></li>
+                        <li class="dropdown-item"><NavLink class="nav-link" href="" @onclick="LogoutAsync">Sign out</NavLink></li>
                     </Authorized>
                     <NotAuthorized>
                         <li class="dropdown-item"><NavLink class="nav-link" href="login">Login</NavLink></li>
-                        <li class="dropdown-item"><NavLink class="nav-link" href="registration">Register</NavLink></li>
                     </NotAuthorized>
                 </AuthorizeView>
             </ul>
         </div>
     </div>
 </div>
+
+@inject AuthenticationStateProvider provider
+@inject NavigationManager navigation
+@code {
+
+
+    private async Task LogoutAsync()
+    {
+        var authStateProvider = (CustomAuthStateProvider)provider;
+        authStateProvider.Logout();
+        navigation.NavigateTo("/");
+    }
+}

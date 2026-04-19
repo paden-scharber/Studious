@@ -5,7 +5,7 @@
 <div class="mx-auto border rounded p-3 w-50">
     <div class="d-flex justify-content-center">
         <img src="Assets\Images\Studious_Logo.svg" width="76" height="60">
-        <h3 class="m-2">Studious</h3>
+        <NavLink class="h3 m-2" style="text-decoration:none;"href="">Studious</NavLink>
     </div>
     <hr />
     @if(error.Length > 0)
@@ -34,34 +34,28 @@
     </div>
     <div class="row mb-3 d-flex justify-content-center">
         <div class="col-auto">
-            <button class="btn btn-sm btn-success" @onclick="LoginAsync">Login</button>
+            <button class="btn btn-sm btn-success @disabledClass" @onclick="LoginAsync">Login</button>
         </div>
         <div class="col-auto">
-            <button class="btn btn-sm btn-success" @onclick="RegisterAsync">Register</button>
+            <button class="btn btn-sm btn-success @disabledClass" @onclick="RegisterAsync">Register</button>
         </div>
     </div>
-    <div class="row d-flex justify-content-center">
-        <div class="col-auto">
-            <p>New user? Create an account <a href="">here</a>!</p>
-        </div>
-    </div>
-
 </div>
 
 @inject AuthenticationStateProvider provider
 @inject NavigationManager navigationManager // Used for redirection
 @inject ILocalStorageService localStorageService
 @code {
-    @using System.Text.Json.Serialization.Metadata;
-
     private string email = "";
     private string password = "";
     private string error = "";
     private string username = "";
     private JsonTypeInfo<string>? jsonTypeInfo;
+    private string disabledClass = "";
 
     private async Task LoginAsync()
     {
+        disabledClass = "disabled";
         var authStateProvider = (CustomAuthStateProvider)provider;
         var formResult = await authStateProvider.LoginAsync(email, password);
 
@@ -75,10 +69,13 @@
         {
             error = formResult.Errors[0];
         }
+
+        disabledClass = "";
     }
 
     private async Task RegisterAsync()
     {
+        disabledClass = "disabled";
         var authStateProvider = (CustomAuthStateProvider)provider;
         var formResult = await authStateProvider.RegisterAsync(email, password);
 
@@ -90,5 +87,7 @@
         {
             error = formResult.Errors[0];
         }
+
+        disabledClass = "";
     }
 }

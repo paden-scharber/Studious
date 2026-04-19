@@ -3,71 +3,74 @@
 @rendermode InteractiveServer
 @inject NavigationManager Nav
 
+<AuthorizeView>
+    <Authorized>
 
-@if (studyContents.Any() && !isError)
-{
-    <div><br /></div>
-    <div class="d-flex align-items-center mb-3">
-        <button class="btn btn-secondary btn-sm me-3" @onclick="GoBack">
-            <i class="bi bi-arrow-left"></i> Back
-        </button>
-        <h3 class="mb-0">@studyItem.STUDYSET_NAME</h3>
-    </div>
-    <hr />
+    @if (studyContents.Any() && !isError)
+    {
+        <div><br /></div>
+        <div class="d-flex align-items-center mb-3">
+            <button class="btn btn-secondary btn-sm me-3" @onclick="GoBack">
+                <i class="bi bi-arrow-left"></i> Back
+            </button>
+            <h3 class="mb-0">@studyItem.STUDYSET_NAME</h3>
+        </div>
+        <hr />
         <div class="d-flex justify-content-between">
-        <button class="btn btn-sm" @onclick="Previous">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-compact-left" viewBox="0 0 16 16">
-                <path fill-rule="evenodd" d="M9.224 1.553a.5.5 0 0 1 .223.67L6.56 8l2.888 5.776a.5.5 0 1 1-.894.448l-3-6a.5.5 0 0 1 0-.448l3-6a.5.5 0 0 1 .67-.223" />
-            </svg>
-        </button>        
-            <div class="card" style="width: 500px; height: 300px;" @onclick="FlipCard">           
+            <button class="btn btn-sm" @onclick="Previous">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-compact-left" viewBox="0 0 16 16">
+                    <path fill-rule="evenodd" d="M9.224 1.553a.5.5 0 0 1 .223.67L6.56 8l2.888 5.776a.5.5 0 1 1-.894.448l-3-6a.5.5 0 0 1 0-.448l3-6a.5.5 0 0 1 .67-.223" />
+                </svg>
+            </button>
+            <div class="card" style="width: 500px; height: 300px;" @onclick="FlipCard">
                 <div class="term @(isTerm ? "term-selection" : null)">
                     <p class="card-header">Term</p>
                     <p class="card-body fs-3 text-center d-flex align-items-center justify-content-center" style="height: 250px;">
-                    @studyItem.TERM</p>
+                        @studyItem.TERM
+                    </p>
                 </div>
                 <div class="definition @(!isTerm ? "term-selection" : null)">
                     <p class="card-header">Definition</p>
                     <p class="card-body fs-3 text-center d-flex align-items-center justify-content-center" style="height: 250px;">
-                    @studyItem.DEFINITION</p>
+                        @studyItem.DEFINITION
+                    </p>
                 </div>
             </div>
-        <button class="btn btn-sm" @onclick="Next">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-compact-right" viewBox="0 0 16 16">
-                <path fill-rule="evenodd" d="M6.776 1.553a.5.5 0 0 1 .671.223l3 6a.5.5 0 0 1 0 .448l-3 6a.5.5 0 1 1-.894-.448L9.44 8 6.553 2.224a.5.5 0 0 1 .223-.671" />
-            </svg>
-        </button>
+            <button class="btn btn-sm" @onclick="Next">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-compact-right" viewBox="0 0 16 16">
+                    <path fill-rule="evenodd" d="M6.776 1.553a.5.5 0 0 1 .671.223l3 6a.5.5 0 0 1 0 .448l-3 6a.5.5 0 1 1-.894-.448L9.44 8 6.553 2.224a.5.5 0 0 1 .223-.671" />
+                </svg>
+            </button>
         </div>
         <hr />
-} 
-else
-{
-    <p>Error loading content, please reload the browser or contact the administrator.</p>    
-}
+    }
+    else
+    {
+        <p>Error loading content, please reload the browser or contact the administrator.</p>
+    }
+    </Authorized>
+    <NotAuthorized>
+        <p>Access denied.</p>
+    </NotAuthorized>
+</AuthorizeView>
 
+@inject ILocalStorageService localStorage
 @code {
-    @using Microsoft.Extensions.Configuration;
-    @using Microsoft.Data.SqlClient;
-    @using StudiousWeb.Models;
-
-    [Parameter] public string? StudySetName { get; set; }
-
-    private string currentUser = "MYINTC";
+        [Parameter] public string? StudySetName { get; set; }
+    private string? currentUser;
     private List<StudyContent> studyContents;
     private StudyContent studyItem;
     private int currentIndex = 0;
     private int total;
     private bool isTerm = false;
     private bool isError = false;
-
-    private string cnxnString = "Server=tcp:studious.database.windows.net,1433;Initial Catalog=StudiousDB;Persist Security Info=False;User ID=StudiousMtsuAdmin;Password=@K8zEBnmSeweZh5;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
+    private readonly string cnxnString = "Server=tcp:studious.database.windows.net,1433;Initial Catalog=StudiousDB;Persist Security Info=False;User ID=StudiousMtsuAdmin;Password=@K8zEBnmSeweZh5;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
 
     protected override async Task OnInitializedAsync()
     {
         studyContents = new List<StudyContent>();
-
-        var cnxnString = "Server=tcp:studious.database.windows.net,1433;Initial Catalog=StudiousDB;Persist Security Info=False;User ID=StudiousMtsuAdmin;Password=@K8zEBnmSeweZh5;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
-
+        currentUser = await localStorage.GetItemAsync<string>("username");
+        isError = false;
         try
         {
             using (SqlConnection cnxn = new SqlConnection(cnxnString))
