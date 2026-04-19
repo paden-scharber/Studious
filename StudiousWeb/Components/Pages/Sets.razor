@@ -2,12 +2,14 @@
 @rendermode InteractiveServer
 @inject NavigationManager Nav
 
+<AuthorizeView>
+    <Authorized>
 @if (string.IsNullOrEmpty(StudySetName))
 {
     <!-- Set Selection View -->
     <div> <br /> </div>
     <div class="d-flex justify-content-between align-items-center">
-        <h3 class="mb-0">@currentUser's Study Sets</h3>
+        <h3 class="mb-0">@context.User.Identity?.Name</h3>
         <button type="button" class="btn btn-success btn-sm" @onclick="() => showModal = true">
             <i class="bi bi-plus-circle"></i> New Study Set
         </button>
@@ -57,29 +59,38 @@
     </div>
     
 }
+    </Authorized>
+    <NotAuthorized>
+        <p>Access not authorized...</p>
+    </NotAuthorized>
 
+</AuthorizeView>
 
+@inject ILocalStorageService localStorage
 @code{
 @using Microsoft.Data.SqlClient;
 @using StudiousWeb.Models;
 
+
     [Parameter] public string? StudySetName { get; set; }
-    private string currentUser = "MYINTC";
+    private string? currentUser;
     private List<StudyMaterialToEdit> usersStudySubjects = new();
     private List<StudyMaterialToEdit> newStudySet = new();
     private List<string> studySets = new();
     private string? errorMessage;
     private string? newStudySetName;
     private bool showModal = false;
+    private JsonTypeInfo<string>? jsonTypeInfo;
 
-private string cnxnString = "Server=tcp:studious.database.windows.net,1433;Initial Catalog=StudiousDB;Persist Security Info=False;User ID=StudiousMtsuAdmin;Password=@K8zEBnmSeweZh5;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
+    private string cnxnString = "Server=tcp:studious.database.windows.net,1433;Initial Catalog=StudiousDB;Persist Security Info=False;User ID=StudiousMtsuAdmin;Password=@K8zEBnmSeweZh5;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
 
-protected override async Task OnInitializedAsync()
-{
-    await LoadStudySets();
-    if (!string.IsNullOrEmpty(StudySetName))
-        await LoadCards();
-}
+    protected override async Task OnInitializedAsync()
+    {
+        currentUser = await localStorage.GetItemAsync<string>("username");
+        await LoadStudySets();
+        if (!string.IsNullOrEmpty(StudySetName))
+            await LoadCards();
+    }
 
 protected override async Task OnParametersSetAsync()
 {

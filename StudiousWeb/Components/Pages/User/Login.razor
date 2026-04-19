@@ -50,17 +50,16 @@
 
 @inject AuthenticationStateProvider provider
 @inject NavigationManager navigationManager // Used for redirection
-@inject ProtectedLocalStorage protectedLocalStore // Used for local storage inm client browser
 @inject ILocalStorageService localStorageService
 @code {
+    @using System.Text.Json.Serialization.Metadata;
+
     private string email = "";
     private string password = "";
     private string error = "";
-    /*
-     *   "email": "cdm@gmail.com",
-        "password": "h21Qie4."
-     * 
-     */
+    private string username = "";
+    private JsonTypeInfo<string>? jsonTypeInfo;
+
     private async Task LoginAsync()
     {
         var authStateProvider = (CustomAuthStateProvider)provider;
@@ -68,7 +67,8 @@
 
         if(formResult.Succeeded)
         {
-            
+            var data = await localStorageService.GetItemAsync("username", jsonTypeInfo);
+            data!.ToString();
             navigationManager.NavigateTo("/");
         }
         else

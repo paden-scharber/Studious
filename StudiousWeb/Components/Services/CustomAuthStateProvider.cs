@@ -28,6 +28,16 @@ namespace StudiousWeb.Components.Services
 
             try
             {
+                // Get the token first — this throws during prerendering, caught below
+                var accessToken = await localStorageService.GetItemAsync<string>("accessToken");
+
+                if (string.IsNullOrWhiteSpace(accessToken))
+                    return new AuthenticationState(user);
+
+                // Set the auth header before making the API call
+                httpClient.DefaultRequestHeaders.Authorization =
+                    new AuthenticationHeaderValue("Bearer", accessToken);
+
                 // Sends a GET HTTP method to the Web API to obtain authenticated user info.
                 var response = await httpClient.GetAsync("manage/info");
 
@@ -46,8 +56,8 @@ namespace StudiousWeb.Components.Services
 
                     var identity = new ClaimsIdentity(claims, "Token");
                     user = new ClaimsPrincipal(identity);
-
                     return new AuthenticationState(user);
+
                 }
             }
             catch(Exception ex)
@@ -82,6 +92,7 @@ namespace StudiousWeb.Components.Services
 
                     await localStorageService.SetItemAsync("accessToken", accessToken);
                     await localStorageService.SetItemAsync("refreshToken", refreshToken);
+                    await localStorageService.SetItemAsync("username", email);
 
                     httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 

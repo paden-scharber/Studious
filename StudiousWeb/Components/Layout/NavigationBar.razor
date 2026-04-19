@@ -1,6 +1,4 @@
-﻿@rendermode InteractiveServer
-
-<div class="navbar studious-nav-bg-main">
+﻿<div class="navbar studious-nav-bg-main">
     <div class="container">
         <a class="navbar-brand text-white" href="">
             <img src="Assets\Images\Studious_Logo.svg" width="43" height="32">
@@ -10,8 +8,7 @@
             <NavLink class="nav-link text-white" href="">Home</NavLink>
             <AuthorizeView>
                 <Authorized>
-                    <NavLink class="nav-link text-white" href="Study">Study Time</NavLink>
-                    <NavLink class="nav-link text-white" href="ManageDB">Edit Sets</NavLink>
+                    <NavLink class="nav-link text-white" href="Sets">Study Time</NavLink>
                 </Authorized>
             </AuthorizeView>
             <NavLink class="nav-link text-white" href="">About</NavLink>
@@ -21,7 +18,7 @@
             <button class="btn text-white border-0 shadow-none dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                 <AuthorizeView>
                     <Authorized>
-                        @context.User.Identity?.Name!
+                        @context.User.Identity?.Name
                     </Authorized>
                     <NotAuthorized>
                         Manage User
