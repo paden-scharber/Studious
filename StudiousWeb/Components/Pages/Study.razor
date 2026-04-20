@@ -5,45 +5,69 @@
 
 <AuthorizeView>
     <Authorized>
-
     @if (studyContents.Any() && !isError)
     {
-        <div><br /></div>
-        <div class="d-flex align-items-center mb-3">
-            <button class="btn btn-secondary btn-sm me-3" @onclick="GoBack">
-                <i class="bi bi-arrow-left"></i> Back
-            </button>
-            <h3 class="mb-0">@studyItem.STUDYSET_NAME</h3>
-        </div>
-        <hr />
-        <div class="d-flex justify-content-between">
-            <button class="btn btn-sm" @onclick="Previous">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-compact-left" viewBox="0 0 16 16">
-                    <path fill-rule="evenodd" d="M9.224 1.553a.5.5 0 0 1 .223.67L6.56 8l2.888 5.776a.5.5 0 1 1-.894.448l-3-6a.5.5 0 0 1 0-.448l3-6a.5.5 0 0 1 .67-.223" />
-                </svg>
-            </button>
-            <div class="card" style="width: 500px; height: 300px;" @onclick="FlipCard">
-                <div class="term @(isTerm ? "term-selection" : null)">
-                    <p class="card-header">Term</p>
-                    <p class="card-body fs-3 text-center d-flex align-items-center justify-content-center" style="height: 250px;">
-                        @studyItem.TERM
-                    </p>
-                </div>
-                <div class="definition @(!isTerm ? "term-selection" : null)">
-                    <p class="card-header">Definition</p>
-                    <p class="card-body fs-3 text-center d-flex align-items-center justify-content-center" style="height: 250px;">
-                        @studyItem.DEFINITION
-                    </p>
-                </div>
+            <div><br /></div>
+            <div class="d-flex align-items-center mb-3">
+                <button class="btn btn-secondary btn-sm me-3" @onclick="GoBack">
+                    <i class="bi bi-arrow-left"></i> Back
+                </button>
+                <h3 class="mb-0">@studyItem.STUDYSET_NAME</h3>
             </div>
-            <button class="btn btn-sm" @onclick="Next">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-compact-right" viewBox="0 0 16 16">
-                    <path fill-rule="evenodd" d="M6.776 1.553a.5.5 0 0 1 .671.223l3 6a.5.5 0 0 1 0 .448l-3 6a.5.5 0 1 1-.894-.448L9.44 8 6.553 2.224a.5.5 0 0 1 .223-.671" />
-                </svg>
-            </button>
-        </div>
+            <hr />
+            <div class="d-flex justify-content-between align-items-center">
+                <button class="btn border-0 px-2 py-0 studious-nav-bg-main"
+                        style="height: 100px; width: 36px;"
+                        disabled="@isBeginning"
+                        @onclick="Previous">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="60" fill="white" class="bi bi-chevron-compact-left" viewBox="0 0 16 16">
+                        <path fill-rule="evenodd" d="M9.224 1.553a.5.5 0 0 1 .223.67L6.56 8l2.888 5.776a.5.5 0 1 1-.894.448l-3-6a.5.5 0 0 1 0-.448l3-6a.5.5 0 0 1 .67-.223" />
+                    </svg>
+                </button>
+
+                <div class="card w-75" style="" @onclick="FlipCard">
+                    <div class="term @(isTerm ? "term-selection" : null)">
+                        <p class="card-header text-white studious-nav-bg-main">Term</p>
+                        <p class="card-body fs-3 text-center d-flex align-items-center justify-content-center" style="height: 250px;">
+                            @studyItem.TERM
+                        </p>
+                    </div>
+                    <div class="definition @(!isTerm ? "term-selection" : null)">
+                        <p class="card-header text-white studious-nav-bg-main">Definition</p>
+                        <p class="card-body fs-3 text-center d-flex align-items-center justify-content-center" style="height: 250px;">
+                            @studyItem.DEFINITION
+                        </p>
+                    </div>
+                </div>
+                <button class="btn border-0 px-2 py-0 studious-nav-bg-main @(isEnd ? "disabled" : "")"
+                        style="height: 100px; width: 36px;"
+                        disabled="@isEnd"
+                        @onclick="Next">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="60" fill="white" class="bi bi-chevron-compact-right" viewBox="0 0 16 16">
+                        <path fill-rule="evenodd" d="M6.776 1.553a.5.5 0 0 1 .671.223l3 6a.5.5 0 0 1 0 .448l-3 6a.5.5 0 1 1-.894-.448L9.44 8 6.553 2.224a.5.5 0 0 1 .223-.671" />
+                    </svg>
+                </button>
+            </div>
         <hr />
-    }
+            <table class="table table-hover table-bordered table-responsive-sm">
+                <thead>
+                    <tr>
+                        <th class="text-center">Term</th>
+                        <th class="text-center">Definition</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach(var item in studyContents)
+                    {
+                        <tr @onclick="() => studyItem = item">
+                            <td>@item.TERM</td>
+                            <td>@item.DEFINITION</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+        }
     else
     {
         <p>Error loading content, please reload the browser or contact the administrator.</p>
@@ -56,7 +80,7 @@
 
 @inject ILocalStorageService localStorage
 @code {
-        [Parameter] public string? StudySetName { get; set; }
+    [Parameter] public string? StudySetName { get; set; }
     private string? currentUser;
     private List<StudyContent> studyContents;
     private StudyContent studyItem;
@@ -64,6 +88,8 @@
     private int total;
     private bool isTerm = false;
     private bool isError = false;
+    private bool isBeginning = true;
+    private bool isEnd = false;
     private readonly string cnxnString = "Server=tcp:studious.database.windows.net,1433;Initial Catalog=StudiousDB;Persist Security Info=False;User ID=StudiousMtsuAdmin;Password=@K8zEBnmSeweZh5;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
 
     protected override async Task OnInitializedAsync()
@@ -112,22 +138,27 @@
     private void Next()
     {
         if (currentIndex < total - 1)
-        {   
-            if(isTerm == true) isTerm = !isTerm;
+        {
+            if (isTerm) isTerm = false;
             currentIndex++;
+            isBeginning = currentIndex == 0;
+            isEnd = currentIndex == total - 1;
             studyItem = studyContents[currentIndex];
         }
     }
 
     private void Previous()
     {
-        if(currentIndex > 0)
+        if (currentIndex > 0)
         {
-            if (isTerm == true) isTerm = !isTerm;  
+            if (isTerm) isTerm = false;
             currentIndex--;
+            isBeginning = currentIndex == 0;
+            isEnd = currentIndex == total - 1;
             studyItem = studyContents[currentIndex];
         }
     }
+
     private void GoBack()
     {
         Nav.NavigateTo($"/sets");
