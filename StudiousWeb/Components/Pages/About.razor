@@ -1,11 +1,147 @@
-﻿@page "/About"
+﻿@page "/about"
 
-<div class="">
-    <img src="Assets/Images/Studious_Logo.svg" width="45" height="50" />
-    <h3>About Studious</h3>
+<div class="about-container">
+    <section class="hero">
+        <h1>About Studios</h1>
+        <p class="subtitle">A simple, interactive way to create and study flashcards.</p>
+    </section>
+
+    <section class="content-grid">
+        <!-- What It Is -->
+        <div class="card">
+            <h2>What is Studios?</h2>
+            <p>
+                Studios is an interactive study tool that helps you create, organize, and review flashcards efficiently.
+                Whether you're preparing for exams or learning something new, Studios keeps studying focused and effective.
+            </p>
+        </div>
+
+        <!-- Why -->
+        <div class="card">
+            <h2>Why it exists</h2>
+            <p>
+                Built to make studying more engaging than traditional flashcards, Studios focuses on simplicity,
+                speed, and useful interactions that actually help you remember information.
+            </p>
+        </div>
+
+        <!-- Features -->
+        <div class="card">
+            <h2>Key Features</h2>
+            <ul>
+                <li>Create custom study sets</li>
+                <li>Add and organize questions easily</li>
+                <li>Interactive flashcard flipping</li>
+                <li>Clean, distraction-free interface</li>
+                <li>Quick review sessions</li>
+            </ul>
+        </div>
+
+        <!-- Benefits -->
+        <div class="card">
+            <h2>How it helps</h2>
+            <p>
+                Studios is built around active recall and repetition—two proven techniques for learning.
+                By testing yourself instead of passively reading, you retain information faster and longer.
+            </p>
+        </div>
+
+        <!-- Getting Started -->
+        <div class="card">
+            <h2>Get Started</h2>
+            <ol>
+                <li>Create an account</li>
+                <li>Build a study set</li>
+                <li>Add terms and definitions</li>
+                <li>Start studying instantly</li>
+            </ol>
+        </div>
+
+        <!-- Tech Stack -->
+        <div class="card">
+            <h2>Tech Stack</h2>
+            <p>
+                Built using Blazor (C#) with a focus on responsive design and interactive UI components.
+            </p>
+        </div>
+
+        <!-- Future -->
+        <div class="card full-width">
+            <h2>Future Improvements</h2>
+            <p>
+                Planned updates include progress tracking, quiz modes, and the ability to share study sets with others.
+            </p>
+        </div>
+    </section>
 </div>
-<p>Built by three nerds </p>
 
-@code {
+<style>
+    .about-container {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 40px 20px;
+        font-family: Arial, sans-serif;
+    }
 
-}
+    .hero {
+        text-align: center;
+        margin-bottom: 40px;
+    }
+
+        .hero h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+        }
+
+    .subtitle {
+        color: #666;
+        font-size: 1.2rem;
+    }
+
+    .content-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 25px;
+    }
+
+    .card {
+        background: #ffffff;
+        padding: 20px;
+        border-radius: 16px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+        }
+
+        .card h2 {
+            margin-bottom: 10px;
+            font-size: 1.4rem;
+        }
+
+        .card p {
+            color: #444;
+            line-height: 1.5;
+        }
+
+        .card ul, .card ol {
+            padding-left: 20px;
+        }
+
+        .card li {
+            margin-bottom: 8px;
+        }
+
+    .full-width {
+        grid-column: span 2;
+    }
+
+    @@media (max-width: 600px) {
+        .full-width {
+            grid-column: span 1;
+        }
+    }
+</style>

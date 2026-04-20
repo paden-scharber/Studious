@@ -11,7 +11,7 @@
                     <NavLink class="nav-link text-white" href="Sets">Study Time</NavLink>
                 </Authorized>
             </AuthorizeView>
-            <NavLink class="nav-link text-white" href="">About</NavLink>
+            <NavLink class="nav-link text-white" href="/about">About</NavLink>
         </div>
        
         <div class="dropdown">
@@ -52,7 +52,7 @@
     private async Task LogoutAsync()
     {
         var authStateProvider = (CustomAuthStateProvider)provider;
-        authStateProvider.Logout();
+        await authStateProvider.Logout();
         navigation.NavigateTo("/");
     }
 }
