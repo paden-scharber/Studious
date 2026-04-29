@@ -52,6 +52,7 @@
                     </svg>
                 </button>
             </div>
+        <!-- Table view of all cards in the set. Clicking a row jumps the flip card to that card -->
         <hr class=" mt-5"/>
             <table class="table table-hover table-bordered table-responsive-sm">
                 <thead>
@@ -84,18 +85,32 @@
 
 @inject ILocalStorageService localStorage
 @code {
+
+    // variables for study srt name and current user
     [Parameter] public string? StudySetName { get; set; }
     private string? currentUser;
+
+    // list for all study content items 
     private List<StudyContent> studyContents;
-    private StudyContent studyItem;
+    private StudyContent studyItem; // the single card currently being displayed on the flip card
+
+    // tracks which card we are on and how many cards total are in the set
     private int currentIndex = 0;
     private int total;
+    
+    // bool flags
+
     private bool isFlipped = false;
     private bool isError = false;
+
+    // isBeginning and isEnd disable the prev/next buttons at the edges of the set
     private bool isBeginning = true;
     private bool isEnd = false;
+
+    // database connection string
     private readonly string cnxnString = "Server=tcp:studious.database.windows.net,1433;Initial Catalog=StudiousDB;Persist Security Info=False;User ID=StudiousMtsuAdmin;Password=@K8zEBnmSeweZh5;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
 
+    // On page load, grab the logged in user from local storage then load their study sets
     protected override async Task OnInitializedAsync()
     {
         studyContents = new List<StudyContent>();
@@ -133,12 +148,12 @@
             isError = true;
         }
     }
-
+    // method to set bool flag for front/back display of card
     private void FlipCard()
     {
         isFlipped = !isFlipped;    
     }
-
+    // method to go forward on flip card set
     private void Next()
     {
         if (currentIndex < total - 1)
@@ -150,7 +165,7 @@
             studyItem = studyContents[currentIndex];
         }
     }
-
+    // method to go back on flip card 
     private void Previous()
     {
         if (currentIndex > 0)
@@ -162,13 +177,14 @@
             studyItem = studyContents[currentIndex];
         }
     }
-
+    // go back button method to go back to study set displays
     private void GoBack()
     {
         Nav.NavigateTo($"/sets");
     }
 }
-
+<!--CSS styling for the card flip. Had to completely ignore all bootstrap styling because CSS and Bootstrap were fighting-->
+<!--this was unbelievably painful, claps for team-->
 <style>
     .card-demo-flip {
         width: 50%;

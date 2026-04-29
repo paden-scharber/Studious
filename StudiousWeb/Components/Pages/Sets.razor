@@ -71,19 +71,28 @@
 @using Microsoft.Data.SqlClient;
 @using StudiousWeb.Models;
 
+    // variable declaration
+    private string? errorMessage;
 
+    // name of study set and the current logged in user
     [Parameter] public string? StudySetName { get; set; }
     private string? currentUser;
-    private List<StudyMaterialToEdit> usersStudySubjects = new();
-    private List<StudyMaterialToEdit> newStudySet = new();
-    private List<string> studySets = new();
-    private string? errorMessage;
-    private string? newStudySetName;
-    private bool showModal = false;
-    private JsonTypeInfo<string>? jsonTypeInfo;
 
+    // lists to hold each study set. 
+    private List<StudyMaterialToEdit> usersStudySubjects = new();
+    private List<StudyMaterialToEdit> newStudySet = new(); 
+    private List<string> studySets = new();
+
+    private string? newStudySetName; // user can select to create a new study set from this page - variable for the name
+
+    // if they selecte new study button then this is flag for showing that
+    private bool showModal = false;
+    private JsonTypeInfo<string>? jsonTypeInfo; // reserved for future use
+
+    // database connection string
     private string cnxnString = "Server=tcp:studious.database.windows.net,1433;Initial Catalog=StudiousDB;Persist Security Info=False;User ID=StudiousMtsuAdmin;Password=@K8zEBnmSeweZh5;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
 
+    // On page load, grab the logged in user from local storage then load their study sets
     protected override async Task OnInitializedAsync()
     {
         currentUser = await localStorage.GetItemAsync<string>("username");
@@ -91,92 +100,89 @@
         if (!string.IsNullOrEmpty(StudySetName))
             await LoadCards();
     }
-
-protected override async Task OnParametersSetAsync()
-{
-    if (!string.IsNullOrEmpty(StudySetName))
-        await LoadCards();
-}
-
-// ---------------------------------------------------------------
-// LOAD STUDY SETS - populates the set selection grid
-// ---------------------------------------------------------------
-private async Task LoadStudySets()
-{
-    studySets.Clear();
-    errorMessage = null;
-
-    try
+    // Blazor calls this when URL parameters change — keeps cards fresh if navigating between sets
+    protected override async Task OnParametersSetAsync()
     {
-        using SqlConnection cnxn = new SqlConnection(cnxnString);
-        cnxn.Open();
-        SqlCommand cmd = new SqlCommand(
-            "SELECT DISTINCT STUDYSET_NAME FROM FLASH_CARDS WHERE USERNAME = @u", cnxn);
-        cmd.Parameters.AddWithValue("@u", currentUser);
-
-        using SqlDataReader reader = cmd.ExecuteReader();
-        while (reader.Read())
-        {
-            studySets.Add(reader["STUDYSET_NAME"].ToString());
-        }
+        if (!string.IsNullOrEmpty(StudySetName))
+            await LoadCards();
     }
-    catch (Exception ex)
+
+    // LOAD STUDY SETS - populates the set selection grid with all saved study sets
+    private async Task LoadStudySets()
     {
-        errorMessage = ex.Message;
-    }
-}
+        studySets.Clear();
+        errorMessage = null;
 
-// ---------------------------------------------------------------
-// LOAD CARDS - loads cards for selected study set
-// ---------------------------------------------------------------
-private async Task LoadCards()
-{
-    usersStudySubjects.Clear();
-    errorMessage = null;
-
-    try
-    {
-        using SqlConnection cnxn = new SqlConnection(cnxnString);
-        cnxn.Open();
-        SqlCommand cmd = new SqlCommand(
-            "SELECT ID, USERNAME, STUDYSET_NAME, TERM, DEFINITION FROM FLASH_CARDS WHERE USERNAME = @u AND STUDYSET_NAME = @s", cnxn);
-        cmd.Parameters.AddWithValue("@u", currentUser);
-        cmd.Parameters.AddWithValue("@s", StudySetName);
-
-        using SqlDataReader reader = cmd.ExecuteReader();
-        while (reader.Read())
+        try
         {
-            usersStudySubjects.Add(new StudyMaterialToEdit
+            using SqlConnection cnxn = new SqlConnection(cnxnString);
+            cnxn.Open();
+            SqlCommand cmd = new SqlCommand(
+                "SELECT DISTINCT STUDYSET_NAME FROM FLASH_CARDS WHERE USERNAME = @u", cnxn);
+            cmd.Parameters.AddWithValue("@u", currentUser);
+
+            using SqlDataReader reader = cmd.ExecuteReader();
+            while (reader.Read())
             {
-                ID = (int)reader["ID"],
-                USERNAME = reader["USERNAME"].ToString(),
-                STUDYSET_NAME = reader["STUDYSET_NAME"].ToString(),
-                TERM = reader["TERM"].ToString(),
-                DEFINITION = reader["DEFINITION"].ToString()
-            });
+                studySets.Add(reader["STUDYSET_NAME"].ToString());
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
         }
     }
-    catch (Exception ex)
+
+    // LOAD CARDS - kept for potential future use. Navigation currently handled by URL routing to /study or /managedb
+    private async Task LoadCards()
     {
-        errorMessage = ex.Message;
+        usersStudySubjects.Clear();
+        errorMessage = null;
+
+        try
+        {
+            using SqlConnection cnxn = new SqlConnection(cnxnString);
+            cnxn.Open();
+            SqlCommand cmd = new SqlCommand(
+                "SELECT ID, USERNAME, STUDYSET_NAME, TERM, DEFINITION FROM FLASH_CARDS WHERE USERNAME = @u AND STUDYSET_NAME = @s", cnxn);
+            cmd.Parameters.AddWithValue("@u", currentUser);
+            cmd.Parameters.AddWithValue("@s", StudySetName);
+
+            using SqlDataReader reader = cmd.ExecuteReader();
+            while (reader.Read())
+            {
+                usersStudySubjects.Add(new StudyMaterialToEdit
+                {
+                    ID = (int)reader["ID"],
+                    USERNAME = reader["USERNAME"].ToString(),
+                    STUDYSET_NAME = reader["STUDYSET_NAME"].ToString(),
+                    TERM = reader["TERM"].ToString(),
+                    DEFINITION = reader["DEFINITION"].ToString()
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
     }
-}
+
+    // New set method if user selects button to create new set
     private void ConfirmNewSet()
     {
         Nav.NavigateTo($"/managedb/{newStudySetName}");
         showModal = false;
     }
-    // ---------------------------------------------------------------
-// ICON HELPER
-// ---------------------------------------------------------------
-private string GetIconForSet(string setName)
-{
-    if (setName.Contains("PHYS", StringComparison.OrdinalIgnoreCase)) return "bi-stars";
-    if (setName.Contains("BIO", StringComparison.OrdinalIgnoreCase)) return "bi-flower1";
-    if (setName.Contains("HIST", StringComparison.OrdinalIgnoreCase)) return "bi-globe";
-    if (setName.Contains("ALGEBRA", StringComparison.OrdinalIgnoreCase) ||
-        setName.Contains("MATH", StringComparison.OrdinalIgnoreCase)) return "bi-calculator";
-    return "bi-journal-bookmark";
-}
+
+    // ICON HELPER - love our joy and whimsy
+    private string GetIconForSet(string setName)
+    {
+        if (setName.Contains("PHYS", StringComparison.OrdinalIgnoreCase)) return "bi-stars";
+        if (setName.Contains("BIO", StringComparison.OrdinalIgnoreCase)) return "bi-flower1";
+        if (setName.Contains("HIST", StringComparison.OrdinalIgnoreCase)) return "bi-globe";
+        if (setName.Contains("ALGEBRA", StringComparison.OrdinalIgnoreCase) ||
+            setName.Contains("MATH", StringComparison.OrdinalIgnoreCase)) return "bi-calculator";
+        return "bi-journal-bookmark";
+    }
 
 }

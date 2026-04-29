@@ -199,42 +199,52 @@ else
 @using Microsoft.Data.SqlClient;
 @using StudiousWeb.Models;
 @using Microsoft.AspNetCore.Components.Forms
+    // Variable declaration 
+    private string? errorMessage;
 
+    // The name of the study sets and current auth user
     [Parameter] public string? StudySetName { get; set; }
-
     private string? currentUser;
+
+    // lists to hold each study set. Multiple lists are used for if new cards are added or existing cards deleted.
     private List<StudyMaterialToEdit> usersStudySubjects = new();
     private List<StudyMaterialToEdit> newStudySet = new();
     private List<StudyMaterialToEdit> deletedCards = new();
     private List<string> studySets = new();
-    private string? errorMessage;
-    private bool saveSuccess = false;
-    private string? newStudySetName;
-    private bool showModal = false;
-    private bool deleteSetFlag = false;
-    private const int MAX_SIZE = 1048576;
+
+    // Boolean flags for multiple methods. 
+    private bool saveSuccess = false;  // was it saved to database?
+    private string? newStudySetName; // reserved for future use - may be used to track new set creation separately
+    private bool showModal = false; // modal for new study set
+    private bool deleteSetFlag = false; // modal for are you sure you want to delete set?
+
+    // 1MG is the maximum size of a file that can be imported
+    private const int MAX_SIZE = 1048576; 
+    // Boolean flags and int to keep count if a line was unable to be imported from file
     private int skippedLines = 0;
     private bool linesWereSkipped = false;
 
+    // hard coded connection to Database
     private string cnxnString = "Server=tcp:studious.database.windows.net,1433;Initial Catalog=StudiousDB;Persist Security Info=False;User ID=StudiousMtsuAdmin;Password=@K8zEBnmSeweZh5;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
-
+    // Read the cards already exisiting in database using LoadCards method
     protected override async Task OnInitializedAsync()
     {
-        currentUser = await localStorage.GetItemAsync<string>("username");
+    // username was initial primary key for flash card table and user table
+        currentUser = await localStorage.GetItemAsync<string>("username"); 
         await LoadStudySets();
         if (!string.IsNullOrEmpty(StudySetName))
             await LoadCards();
     }
 
+    // Blazor calls this when URL parameters change. Needed separately from OnInitializedAsync
+    // so navigating between sets reloads the correct cards without a full page refresh
     protected override async Task OnParametersSetAsync()
     {
         if (!string.IsNullOrEmpty(StudySetName))
             await LoadCards();
     }
 
-    // ---------------------------------------------------------------
-    // LOAD STUDY SETS - populates the set selection grid
-    // ---------------------------------------------------------------
+    // LOAD STUDY SETS - loads all saved study sets
     private async Task LoadStudySets()
     {
         studySets.Clear();
@@ -260,9 +270,7 @@ else
         }
     }
 
-    // ---------------------------------------------------------------
     // LOAD CARDS - loads cards for selected study set
-    // ---------------------------------------------------------------
     private async Task LoadCards()
     {
         usersStudySubjects.Clear();
@@ -296,23 +304,20 @@ else
         }
     }
 
-    // ---------------------------------------------------------------
-    // NAVIGATION
-    // ---------------------------------------------------------------
+    // NAVIGATION METHODS 
+    // takes us to selected set
     private void SelectSet(string setName)
     {
         StudySetName = setName;
         _ = LoadCards();
     }
-
+    // takes us to page with all saved sets
     private void GoBack()
     {
         Nav.NavigateTo($"/sets");
     }
 
-    // ---------------------------------------------------------------
-    // CREATE NEW SET
-    // ---------------------------------------------------------------
+    // CREATE NEW SET - just saves new set name. Doesn't send to DB until "saved"
     private void ConfirmNewSet()
     {
         StudySetName = newStudySetName;
@@ -320,9 +325,8 @@ else
 
     }
 
-    // ---------------------------------------------------------------
-    // CREATE CARD
-    // ---------------------------------------------------------------
+    // CREATE CARD METHODS
+    // method for individual card
     private void CreateCard()
     {
         saveSuccess = false;
@@ -336,14 +340,7 @@ else
         EDIT_MODE = true
     });
     }
-
-    /// <summary>
-    /// UPLOAD FILE TO CREATE MULTIPLE CARDS
-    /// </summary>
-    /// <param name="card"></param>
-
-
-
+    // method for file input for multiple cards
     private async Task LoadFiles(InputFileChangeEventArgs e)
     {
         var file = e.File;
@@ -378,10 +375,11 @@ else
                     {
                         skippedLines++;
                     }
-                    if(skippedLines > 0)
-                    {
-                        linesWereSkipped = true;
-                    }
+                }
+                
+                if (skippedLines > 0)
+                {
+                    linesWereSkipped = true;
                 }
             }
         }
@@ -391,9 +389,8 @@ else
         }
     }
         
-    // ---------------------------------------------------------------
-    // UPDATE
-    // ---------------------------------------------------------------
+    // UPDATE METHODS
+    // inline editing to cards
     private void EditCard(StudyMaterialToEdit card)
     {
         saveSuccess = false;
@@ -401,14 +398,14 @@ else
         card.ORIGINAL_DEFINITION = card.DEFINITION;
         card.EDIT_MODE = true;
     }
-
+    // card being edited button to confirm changes, now tracked with bool flags
     private void ConfirmEdit(StudyMaterialToEdit card)
     {
         if (!card.IS_NEW)
             card.IS_DIRTY = true;
         card.EDIT_MODE = false;
     }
-
+    // card being edited button to cancel changes, now tracked with bool flags
     private void CancelEdit(StudyMaterialToEdit card)
     {
         if (card.IS_NEW)
@@ -423,10 +420,7 @@ else
         }
     }
 
-    /// <summary>
-    /// Delete card from webpage, flag it to be deleted from database when save is called 
-    /// </summary>
-    /// <param name="card"></param>
+    // Delete Card - just removes from web page. will now be tracked with bool flag and updated in DB when "saved"
     private void DeleteCard(StudyMaterialToEdit card)
     {
         saveSuccess = false;
@@ -435,10 +429,7 @@ else
         usersStudySubjects.Remove(card);
     }
 
-    /// <summary>
-    ///  Save all changes to databse
-    /// </summary>
-    /// <returns></returns>
+    // Money maker right here. All tracked card/set changes, updates, deletions, creations will be updated in database.
     private async Task SaveToDB()
     {
         errorMessage = null;
@@ -490,11 +481,7 @@ else
     }
 
 
-    /// <summary>
-    /// DELETE ENTIRE SET
-    /// </summary>
-    /// <param name="setName"></param>
-    /// <returns></returns>
+    // DELETE ENTIRE SET - wipes the entire study set from the database. No take backs!
     private async Task DeleteSet()
     {     
         errorMessage = null;
@@ -509,8 +496,6 @@ else
             cmd.Parameters.AddWithValue("@s", StudySetName);
             cmd.Parameters.AddWithValue("@u", currentUser);
             await cmd.ExecuteNonQueryAsync();
-            
-
         }
         catch (Exception ex)
         {
@@ -521,18 +506,14 @@ else
         
     }
 
-    // ---------------------------------------------------------------
-// ICON HELPER
-// ---------------------------------------------------------------
-private string GetIconForSet(string setName)
-{
-    if (setName.Contains("PHYS", StringComparison.OrdinalIgnoreCase)) return "bi-stars";
-    if (setName.Contains("BIO", StringComparison.OrdinalIgnoreCase)) return "bi-flower1";
-    if (setName.Contains("HIST", StringComparison.OrdinalIgnoreCase)) return "bi-globe";
-    if (setName.Contains("ALGEBRA", StringComparison.OrdinalIgnoreCase) ||
-        setName.Contains("MATH", StringComparison.OrdinalIgnoreCase)) return "bi-calculator";
-    return "bi-journal-bookmark";
-}
-
-
+    // ICON HELPER - joy and whismy. I have loved bootstrap icons. I wanted to do more. This is only icons for study sets.
+    private string GetIconForSet(string setName)
+    {
+        if (setName.Contains("PHYS", StringComparison.OrdinalIgnoreCase)) return "bi-stars";
+        if (setName.Contains("BIO", StringComparison.OrdinalIgnoreCase)) return "bi-flower1";
+        if (setName.Contains("HIST", StringComparison.OrdinalIgnoreCase)) return "bi-globe";
+        if (setName.Contains("ALGEBRA", StringComparison.OrdinalIgnoreCase) ||
+            setName.Contains("MATH", StringComparison.OrdinalIgnoreCase)) return "bi-calculator";
+        return "bi-journal-bookmark";
+    }
 }
