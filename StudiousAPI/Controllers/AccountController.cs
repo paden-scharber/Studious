@@ -51,4 +51,6 @@ namespace StudiousAPI.Controllers
             return Ok(userProfile);
         } 
     }
+
+
 }
